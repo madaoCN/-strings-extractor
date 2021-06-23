@@ -7,8 +7,7 @@ let package = Package(
     name: "SwiftStringsExtractor",
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
-        .library(
-            name: "SwiftStringsExtractor",
+        .library(name: "SwiftStringsExtractor",
             targets: ["SwiftStringsExtractor"]),
     ],
     dependencies: [
@@ -20,7 +19,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "SwiftStringsExtractor",
-            dependencies: []),
+            dependencies: ["SwiftSyntax"]),
         .testTarget(
             name: "SwiftStringsExtractorTests",
             dependencies: ["SwiftStringsExtractor"]),

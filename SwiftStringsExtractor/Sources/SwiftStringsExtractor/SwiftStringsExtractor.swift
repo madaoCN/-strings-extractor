@@ -2,5 +2,9 @@ import SwiftSyntax
 import Foundation
 
 /// Syntax Tree Visitor
-class SwiftStringsExtractor: NSObject {
+class SwiftStringsExtractor: SyntaxVisitor {
+    
+    override func visitPost(_ node: TokenSyntax) {
+        
+    }
 }

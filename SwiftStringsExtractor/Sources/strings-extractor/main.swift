@@ -28,6 +28,14 @@ func recursiveFiles(withExtensions exts: [String], at path: Path) throws -> [Pat
     return []
 }
 
+func pathAddFilePrefixIfNeed(_ path: String) -> String {
+    var p = path
+    if !p.hasPrefix("file:") {
+        p = "file:" + p
+    }
+    return p
+}
+
 enum InternalError: Error {
     case illegalArg(String)
 }
@@ -48,6 +56,11 @@ struct StringsExtractor: ParsableCommand {
         """)
     var exts: [String]
     
+    @Option(name: .shortAndLong,  help: """
+        File output path
+        """)
+    var output: String?
+
     func run() throws {
 
         var ets = exts
@@ -63,9 +76,7 @@ struct StringsExtractor: ParsableCommand {
             throw InternalError.illegalArg("Path could not be empty")
         }
         
-        if !p.hasPrefix("file://") {
-            p = "file://" + p
-        }
+        p = pathAddFilePrefixIfNeed(p)
         
         guard let url = URL.init(string: p) else {
             throw InternalError.illegalArg("Path illegal")
@@ -75,30 +86,50 @@ struct StringsExtractor: ParsableCommand {
             throw InternalError.illegalArg("Path error")
         }
         
+        var strCollect = [String]()
+        let endTag = "============ end ============\n"
+        
         let extractor = SwiftStringsExtractor.init()
         extractor.visitCallBack = {(str) in
             print(str)
+            strCollect.append(str)
         }
         
         if pPath.isFile == true {
             print("============ \(p) ============")
+            strCollect.append("============ \(p) ============")
             let tree = try! SyntaxParser.parse(url)
             extractor.walk(tree)
-            print("============ end ============\n")
+            
+            print(endTag)
+            strCollect.append(endTag)
         } else {
             let paths = try recursiveFiles(withExtensions: ets, at: pPath)
             
             for path in paths {
-                print("============ \(path) ============")
-                
-                guard let u = URL.init(string: "file://" + path.string) else {
+                print("============ \(path.string) ============")
+                strCollect.append("============ \(path.string) ============")
+
+                guard let u = URL.init(string: pathAddFilePrefixIfNeed(path.string)) else {
                     continue
                 }
                 let tree = try! SyntaxParser.parse(u)
                 extractor.walk(tree)
                 
-                print("============ end ============\n")
+                print(endTag)
+                strCollect.append(endTag)
             }
+        }
+        
+        if var outPath = output  {
+            outPath = pathAddFilePrefixIfNeed(outPath)
+            
+            guard let out = URL.init(string: outPath),
+                  let outP = Path.init(url: out) else {
+                throw InternalError.illegalArg("Output Path error")
+            }
+            
+            try! strCollect.joined(separator: "\n").write(to: outP, encoding: .utf8)
         }
         
         print("extract done")

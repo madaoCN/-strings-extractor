@@ -87,28 +87,35 @@ struct StringsExtractor: ParsableCommand {
         }
         
         var strCollect = [String]()
+        var tempCollect = [String]()
         let endTag = "============ end ============\n"
         
         let extractor = SwiftStringsExtractor.init()
         extractor.visitCallBack = {(str) in
             print(str)
-            strCollect.append(str)
+            if !str.isEmpty {
+                tempCollect.append(str)
+            }
         }
         
         if pPath.isFile == true {
             print("============ \(p) ============")
-            strCollect.append("============ \(p) ============")
+            tempCollect.append("============ \(p) ============")
             let tree = try! SyntaxParser.parse(url)
             extractor.walk(tree)
             
             print(endTag)
-            strCollect.append(endTag)
+            tempCollect.append(endTag)
+            
+            if tempCollect.count > 2 {
+                strCollect = tempCollect
+            }
         } else {
             let paths = try recursiveFiles(withExtensions: ets, at: pPath)
             
             for path in paths {
                 print("============ \(path.string) ============")
-                strCollect.append("============ \(path.string) ============")
+                tempCollect.append("============ \(path.string) ============")
 
                 guard let u = URL.init(string: pathAddFilePrefixIfNeed(path.string)) else {
                     continue
@@ -117,7 +124,14 @@ struct StringsExtractor: ParsableCommand {
                 extractor.walk(tree)
                 
                 print(endTag)
-                strCollect.append(endTag)
+                tempCollect.append(endTag)
+                
+                if tempCollect.count > 2 {
+                    strCollect.append(contentsOf: tempCollect)
+                    tempCollect = [String]()
+                } else {
+                    tempCollect = [String]()
+                }
             }
         }
         
